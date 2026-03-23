@@ -13,8 +13,6 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMixin {
   final fullNameController = TextEditingController();
   final emailController = TextEditingController();
-  final nimController = TextEditingController();
-  final orgCodeController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
@@ -22,7 +20,6 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
   bool showConfirmPassword = false;
   bool agreeToTerms = false;
   bool isLoading = false;
-  String selectedRole = 'anggota';
 
   late AnimationController _orb1Controller;
   late AnimationController _orb2Controller;
@@ -63,8 +60,6 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
   void dispose() {
     fullNameController.dispose();
     emailController.dispose();
-    nimController.dispose();
-    orgCodeController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     _orb1Controller.dispose();
@@ -106,8 +101,6 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
   Future<void> handleSubmit() async {
     if (fullNameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
-        nimController.text.trim().isEmpty ||
-        orgCodeController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty ||
         confirmPasswordController.text.trim().isEmpty) {
       showMessage('Semua field wajib diisi');
@@ -136,8 +129,8 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
     
     if (!mounted) return;
     
-    // Navigate to onboarding page
-    Navigator.pushReplacementNamed(context, '/onboarding');
+    // Navigate to organization choice page
+    Navigator.pushReplacementNamed(context, '/organization');
   }
 
   void showMessage(String message) {
@@ -460,30 +453,9 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
                   delay: 500,
                 ),
                 const SizedBox(height: 20),
-                _buildTextField(
-                  controller: nimController,
-                  label: 'NIM (Nomor Induk Mahasiswa)',
-                  hint: '12345678',
-                  icon: Icons.tag,
-                  theme: theme,
-                  delay: 550,
-                ),
-                const SizedBox(height: 20),
-                _buildTextFieldWithHelper(
-                  controller: orgCodeController,
-                  label: 'Kode Organisasi',
-                  hint: 'ORG123',
-                  icon: Icons.business_outlined,
-                  helper: 'Dapatkan kode dari Admin organisasi Anda',
-                  theme: theme,
-                  delay: 600,
-                ),
-                const SizedBox(height: 20),
                 _buildPasswordFieldWithStrength(theme),
                 const SizedBox(height: 20),
                 _buildConfirmPasswordField(theme),
-                const SizedBox(height: 24),
-                _buildRoleSelection(theme),
                 const SizedBox(height: 24),
                 _buildTermsCheckbox(theme),
                 const SizedBox(height: 24),
@@ -553,70 +525,6 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
         .fadeIn(duration: 500.ms, delay: delay.ms)
         .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: delay.ms);
   }
-
-  Widget _buildTextFieldWithHelper({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required String helper,
-    required ThemeData theme,
-    required int delay,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: theme.textTheme.bodyLarge?.color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: theme.inputDecorationTheme.fillColor ?? theme.cardColor,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          helper,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    )
-        .animate()
-        .fadeIn(duration: 500.ms, delay: delay.ms)
-        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: delay.ms);
-  }
-
 
   Widget _buildPasswordFieldWithStrength(ThemeData theme) {
     final passwordStrength = getPasswordStrength();
@@ -722,8 +630,8 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
       ],
     )
         .animate()
-        .fadeIn(duration: 500.ms, delay: 650.ms)
-        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: 650.ms);
+        .fadeIn(duration: 500.ms, delay: 550.ms)
+        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: 550.ms);
   }
 
 
@@ -799,164 +707,8 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
       ],
     )
         .animate()
-        .fadeIn(duration: 500.ms, delay: 700.ms)
-        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: 700.ms);
-  }
-
-
-  Widget _buildRoleSelection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.people_outline, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Daftar Sebagai',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: theme.textTheme.bodyLarge?.color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildRoleCard(
-                title: 'Ketua Organisasi',
-                subtitle: 'Full access & control',
-                icon: Icons.workspace_premium,
-                value: 'ketua',
-                color: theme.colorScheme.primary,
-                theme: theme,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildRoleCard(
-                title: 'Anggota',
-                subtitle: 'Collaborate & contribute',
-                icon: Icons.people,
-                value: 'anggota',
-                color: theme.colorScheme.primary,
-                theme: theme,
-              ),
-            ),
-          ],
-        ),
-      ],
-    )
-        .animate()
-        .fadeIn(duration: 500.ms, delay: 800.ms)
-        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: 800.ms);
-  }
-
-  Widget _buildRoleCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String value,
-    required Color color,
-    required ThemeData theme,
-  }) {
-    final isSelected = selectedRole == value;
-
-    return GestureDetector(
-      onTap: () => setState(() => selectedRole = value),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.05) : theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : theme.dividerColor.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : [],
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected ? color : Colors.grey[300],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        size: 24,
-                        color: isSelected ? Colors.white : Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? color : theme.textTheme.bodyMedium?.color,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            if (isSelected)
-              Positioned(
-                top: -8,
-                right: -8,
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                ).animate().scale(begin: const Offset(0, 0), delay: 100.ms),
-              ),
-          ],
-        ),
-      ),
-    );
+        .fadeIn(duration: 500.ms, delay: 600.ms)
+        .slideX(begin: -0.2, end: 0, duration: 500.ms, delay: 600.ms);
   }
 
 
@@ -1026,7 +778,7 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
       ],
     )
         .animate()
-        .fadeIn(duration: 500.ms, delay: 900.ms);
+        .fadeIn(duration: 500.ms, delay: 700.ms);
   }
 
   Widget _buildSubmitButton(ThemeData theme) {
@@ -1067,8 +819,8 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
             ),
     )
         .animate()
-        .fadeIn(duration: 500.ms, delay: 1000.ms)
-        .slideY(begin: 0.2, end: 0, duration: 500.ms, delay: 1000.ms);
+        .fadeIn(duration: 500.ms, delay: 800.ms)
+        .slideY(begin: 0.2, end: 0, duration: 500.ms, delay: 800.ms);
   }
 
   Widget _buildSignInLink() {
@@ -1096,6 +848,6 @@ class _RegisterPageState extends State<RegisterPage> with TickerProviderStateMix
       ],
     )
         .animate()
-        .fadeIn(duration: 500.ms, delay: 1100.ms);
+        .fadeIn(duration: 500.ms, delay: 900.ms);
   }
 }

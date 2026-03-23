@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/auth/presentation/pages/auth_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
+import 'features/organization/presentation/pages/organization_choice_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart' as onboarding;
 
 Future<void> main() async {
@@ -26,7 +27,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: const AuthPage(),
       routes: {
-        '/onboarding': (context) => onboarding.OnboardingPage(),
+        '/organization': (context) => const OrganizationChoicePage(),
+        '/onboarding': (context) => const onboarding.OnboardingPage(),
         '/dashboard': (context) => const ProfilePage(),
       },
     );
