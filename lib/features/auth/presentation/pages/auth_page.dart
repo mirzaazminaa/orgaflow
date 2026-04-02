@@ -14,6 +14,88 @@ class AuthPage extends StatefulWidget {
   State<AuthPage> createState() => _AuthPageState();
 }
 
+class _GradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final String text;
+  final double height;
+  final bool isLoading;
+
+  const _GradientButton({
+    required this.onPressed,
+    required this.text,
+    this.height = 56,
+    this.isLoading = false,
+  });
+
+  @override
+  State<_GradientButton> createState() => _GradientButtonState();
+}
+
+class _GradientButtonState extends State<_GradientButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    const hoverPurple = Color(0xFFA78BFA);
+    const hoverTeal = Color(0xFF2DD4BF);
+
+    return MouseRegion(
+      cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: widget.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isHovered && widget.onPressed != null
+                ? [hoverPurple, hoverTeal]
+                : [purpleColor, tealColor],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isHovered && widget.onPressed != null
+              ? [
+                  BoxShadow(
+                    color: purpleColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      widget.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -139,8 +221,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
-    final secondaryColor = theme.colorScheme.secondary;
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
 
     return Scaffold(
       body: Container(
@@ -149,16 +231,16 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              primaryColor.withOpacity(0.2),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              secondaryColor.withOpacity(0.2),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),
         child: Stack(
           children: [
             // Animated background orbs
-            _buildAnimatedOrbs(primaryColor, secondaryColor),
+            _buildAnimatedOrbs(),
 
             // Main content
             SafeArea(
@@ -170,7 +252,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildHeader(primaryColor, secondaryColor),
+                        _buildHeader(),
                         const SizedBox(height: 32),
                         _buildLoginCard(theme),
                         const SizedBox(height: 24),
@@ -187,7 +269,9 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAnimatedOrbs(Color primaryColor, Color secondaryColor) {
+  Widget _buildAnimatedOrbs() {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Positioned.fill(
       child: Stack(
         children: [
@@ -209,8 +293,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          primaryColor.withOpacity(opacity * 0.3),
-                          primaryColor.withOpacity(opacity * 0.1),
+                          purpleColor.withOpacity(opacity * 0.3),
+                          purpleColor.withOpacity(opacity * 0.1),
                         ],
                       ),
                     ),
@@ -241,8 +325,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          secondaryColor.withOpacity(opacity * 0.4),
-                          secondaryColor.withOpacity(opacity * 0.1),
+                          tealColor.withOpacity(opacity * 0.4),
+                          tealColor.withOpacity(opacity * 0.1),
                         ],
                       ),
                     ),
@@ -276,8 +360,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            primaryColor.withOpacity(opacity * 0.35),
-                            primaryColor.withOpacity(opacity * 0.1),
+                            purpleColor.withOpacity(opacity * 0.35),
+                            purpleColor.withOpacity(opacity * 0.1),
                           ],
                         ),
                       ),
@@ -309,8 +393,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          secondaryColor.withOpacity(opacity * 0.38),
-                          secondaryColor.withOpacity(opacity * 0.1),
+                          tealColor.withOpacity(opacity * 0.38),
+                          tealColor.withOpacity(opacity * 0.1),
                         ],
                       ),
                     ),
@@ -342,8 +426,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          primaryColor.withOpacity(opacity * 0.3),
-                          primaryColor.withOpacity(opacity * 0.05),
+                          purpleColor.withOpacity(opacity * 0.3),
+                          purpleColor.withOpacity(opacity * 0.05),
                         ],
                       ),
                     ),
@@ -360,7 +444,9 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader(Color primaryColor, Color secondaryColor) {
+  Widget _buildHeader() {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Column(
       children: [
         // Logo with hover effect (using GestureDetector for tap scale)
@@ -372,16 +458,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             height: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: primaryColor.withOpacity(0.1),
-              border: Border.all(
-                color: primaryColor.withOpacity(0.2),
-                width: 2,
+              gradient: const LinearGradient(
+                colors: [purpleColor, tealColor],
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.auto_awesome,
               size: 32,
-              color: primaryColor,
+              color: Colors.white,
             ),
           ),
         )
@@ -394,8 +478,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 
         // Title with gradient
         ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [primaryColor, secondaryColor],
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [purpleColor, tealColor],
           ).createShader(bounds),
           child: const Text(
             'Selamat datang di OrgaFlow!',
@@ -581,40 +665,11 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSubmitButton(ThemeData theme) {
-    return ElevatedButton(
+    return _GradientButton(
       onPressed: isLoading ? null : handleSubmit,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 0,
-      ),
-      child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.login, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Masuk',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+      text: 'Sign In',
+      height: 48,
+      isLoading: isLoading,
     );
   }
 

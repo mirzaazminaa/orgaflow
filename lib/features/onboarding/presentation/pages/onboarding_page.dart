@@ -240,6 +240,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
 
     if (isLoadingInitialData) {
       return Scaffold(
@@ -249,14 +251,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                theme.colorScheme.primary.withOpacity(0.05),
+                purpleColor.withOpacity(0.15),
                 theme.scaffoldBackgroundColor,
-                theme.colorScheme.secondary.withOpacity(0.05),
+                tealColor.withOpacity(0.15),
               ],
             ),
           ),
           child: const Center(
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(color: Colors.white),
           ),
         ),
       );
@@ -264,28 +266,46 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     if (_initialData == null) {
       return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  loadError ?? 'Gagal memuat data onboarding',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isLoadingInitialData = true;
-                      loadError = null;
-                    });
-                    _loadInitialData();
-                  },
-                  child: const Text('Coba Lagi'),
-                ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                purpleColor.withOpacity(0.15),
+                theme.scaffoldBackgroundColor,
+                tealColor.withOpacity(0.15),
               ],
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    loadError ?? 'Gagal memuat data onboarding',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        isLoadingInitialData = true;
+                        loadError = null;
+                      });
+                      _loadInitialData();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: purpleColor,
+                    ),
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -299,9 +319,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              theme.colorScheme.secondary.withOpacity(0.05),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),

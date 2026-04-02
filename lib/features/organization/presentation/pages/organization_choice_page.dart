@@ -16,11 +16,206 @@ class OrganizationChoicePage extends StatefulWidget {
   State<OrganizationChoicePage> createState() => _OrganizationChoicePageState();
 }
 
+class _HoverCard extends StatefulWidget {
+  final Widget child;
+  final Color color;
+
+  const _HoverCard({required this.child, required this.color});
+
+  @override
+  State<_HoverCard> createState() => _HoverCardState();
+}
+
+class _HoverCardState extends State<_HoverCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        transform: Matrix4.identity()
+          ..translate(0.0, _isHovered ? -8.0 : 0.0),
+        decoration: BoxDecoration(
+          color: theme.cardColor.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: _isHovered
+                ? widget.color.withOpacity(0.5)
+                : widget.color.withOpacity(0.2),
+            width: _isHovered ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withOpacity(_isHovered ? 0.3 : 0.15),
+              blurRadius: _isHovered ? 40 : 30,
+              spreadRadius: _isHovered ? 2 : 0,
+              offset: Offset(0, _isHovered ? 12 : 8),
+            ),
+          ],
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _GradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final String text;
+  final double height;
+  final bool isLoading;
+
+  const _GradientButton({
+    required this.onPressed,
+    required this.text,
+    this.height = 56,
+    this.isLoading = false,
+  });
+
+  @override
+  State<_GradientButton> createState() => _GradientButtonState();
+}
+
+class _GradientButtonState extends State<_GradientButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    const hoverPurple = Color(0xFFA78BFA);
+    const hoverTeal = Color(0xFF2DD4BF);
+
+    return MouseRegion(
+      cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: widget.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isHovered && widget.onPressed != null
+                ? [hoverPurple, hoverTeal]
+                : [purpleColor, tealColor],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isHovered && widget.onPressed != null
+              ? [
+                  BoxShadow(
+                    color: purpleColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      widget.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradientIconButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+
+  const _GradientIconButton({
+    required this.onPressed,
+    required this.icon,
+  });
+
+  @override
+  State<_GradientIconButton> createState() => _GradientIconButtonState();
+}
+
+class _GradientIconButtonState extends State<_GradientIconButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    const hoverPurple = Color(0xFFA78BFA);
+    const hoverTeal = Color(0xFF2DD4BF);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isHovered
+                ? [hoverPurple, hoverTeal]
+                : [purpleColor, tealColor],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isHovered
+              ? [
+                  BoxShadow(
+                    color: purpleColor.withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: Icon(widget.icon, color: Colors.white, size: 20),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrganizationChoicePageState extends State<OrganizationChoicePage>
     with TickerProviderStateMixin {
   String? mode; // null, 'create', 'join'
   final organizationNameController = TextEditingController();
   String? selectedOrgType;
+  final customOrgTypeController = TextEditingController();
   final organizationCodeController = TextEditingController();
   final OrganizationPresenter _presenter = OrganizationPresenter();
   String generatedCode = '';
@@ -60,6 +255,7 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
   @override
   void dispose() {
     organizationNameController.dispose();
+    customOrgTypeController.dispose();
     organizationCodeController.dispose();
     _orb1Controller.dispose();
     _orb2Controller.dispose();
@@ -111,6 +307,12 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
     if (organizationNameController.text.trim().isEmpty ||
         selectedOrgType == null) {
       setState(() => errorMessage = 'Mohon lengkapi semua field');
+      return;
+    }
+
+    // Jika pilih "Lainnya", validasi custom input
+    if (selectedOrgType == 'Lainnya' && customOrgTypeController.text.trim().isEmpty) {
+      setState(() => errorMessage = 'Mohon masukkan jenis organisasi');
       return;
     }
 
@@ -250,6 +452,8 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
   }
 
   Widget _buildChoiceScreen(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -257,9 +461,9 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.2),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              theme.colorScheme.secondary.withOpacity(0.2),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),
@@ -271,7 +475,6 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    _buildBackButton(theme),
                     const SizedBox(height: 32),
                     _buildHeader(theme),
                     const SizedBox(height: 64),
@@ -286,29 +489,10 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
     );
   }
 
-  Widget _buildBackButton(ThemeData theme) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ElevatedButton.icon(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back, size: 16),
-        label: const Text('Kembali',
-            style: TextStyle(fontWeight: FontWeight.w500)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.cardColor.withOpacity(0.6),
-          foregroundColor: theme.textTheme.bodyLarge?.color,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      )
-          .animate()
-          .fadeIn(duration: 600.ms, delay: 100.ms)
-          .slideX(begin: -0.2, end: 0),
-    );
-  }
-
   Widget _buildHeader(ThemeData theme) {
+    const tealColor = Color(0xFF14B8A6);
+    const purpleColor = Color(0xFF8B5CF6);
+    
     return Column(
       children: [
         Container(
@@ -316,10 +500,10 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
           height: 64,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+              colors: [purpleColor, tealColor],
             ),
           ),
           child: const Icon(Icons.business, size: 32, color: Colors.white),
@@ -328,8 +512,8 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
             .scale(begin: const Offset(0, 0), delay: 200.ms, duration: 600.ms),
         const SizedBox(height: 24),
         ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [purpleColor, tealColor],
           ).createShader(bounds),
           child: const Text(
             'Pilih "Rumah" Organisasi',
@@ -376,83 +560,64 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
   }
 
   Widget _buildCreateCard(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            blurRadius: 30,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
+    const purpleColor = Color(0xFF8B5CF6);
+    return _HoverCard(
+      color: purpleColor,
+      child: Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    purpleColor.withOpacity(0.2),
+                    purpleColor.withOpacity(0.1)
+                  ],
+                ),
+              ),
+              child: Icon(Icons.person_add,
+                  size: 48, color: purpleColor),
+            ),
+            const SizedBox(height: 32),
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(0.2),
-                  theme.colorScheme.secondary.withOpacity(0.1)
+                  purpleColor,
+                  purpleColor.withOpacity(0.8)
                 ],
-              ),
+              ).createShader(bounds),
+              child: const Text('Buat Organisasi Baru',
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
             ),
-            child: Icon(Icons.person_add,
-                size: 48, color: theme.colorScheme.primary),
-          ),
-          const SizedBox(height: 32),
-          ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.primary.withOpacity(0.8)
-              ],
-            ).createShader(bounds),
-            child: const Text('Buat Organisasi Baru',
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-              'Anda adalah Ketua atau Admin yang ingin memulai organisasi baru dari awal.',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          const SizedBox(height: 32),
-          _buildFeatureItem(theme, 'Jadi Admin/Ketua secara otomatis',
-              theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          _buildFeatureItem(theme, 'Dapatkan kode organisasi unik',
-              theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          _buildFeatureItem(
-              theme, 'Undang anggota dengan kode', theme.colorScheme.primary),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
+            const SizedBox(height: 16),
+            Text(
+                'Anda adalah Ketua atau Admin yang ingin memulai organisasi baru dari awal.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            const SizedBox(height: 32),
+            _buildFeatureItem(theme, 'Jadi Admin/Ketua secara otomatis',
+                purpleColor),
+            const SizedBox(height: 16),
+            _buildFeatureItem(theme, 'Dapatkan kode organisasi unik',
+                purpleColor),
+            const SizedBox(height: 16),
+            _buildFeatureItem(
+                theme, 'Undang anggota dengan kode', purpleColor),
+            const SizedBox(height: 40),
+            _GradientButton(
               onPressed: () => setState(() => mode = 'create'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Mulai Buat Organisasi',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              text: 'Mulai Buat Organisasi',
+              height: 56,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     )
         .animate()
@@ -461,83 +626,64 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
   }
 
   Widget _buildJoinCard(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            blurRadius: 30,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
+    const tealColor = Color(0xFF14B8A6);
+    return _HoverCard(
+      color: tealColor,
+      child: Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    tealColor.withOpacity(0.2),
+                    tealColor.withOpacity(0.1)
+                  ],
+                ),
+              ),
+              child: Icon(Icons.confirmation_number,
+                  size: 48, color: tealColor),
+            ),
+            const SizedBox(height: 32),
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(0.2),
-                  theme.colorScheme.secondary.withOpacity(0.1)
+                  tealColor,
+                  tealColor.withOpacity(0.8)
                 ],
-              ),
+              ).createShader(bounds),
+              child: const Text('Gabung Organisasi',
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
             ),
-            child: Icon(Icons.confirmation_number,
-                size: 48, color: theme.colorScheme.primary),
-          ),
-          const SizedBox(height: 32),
-          ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.primary.withOpacity(0.8)
-              ],
-            ).createShader(bounds),
-            child: const Text('Gabung Organisasi',
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-              'Anda adalah Anggota yang sudah mendapat kode undangan dari Ketua atau Admin.',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          const SizedBox(height: 32),
-          _buildFeatureItem(
-              theme, 'Masukkan kode organisasi', theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          _buildFeatureItem(
-              theme, 'Bergabung sebagai Anggota', theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          _buildFeatureItem(
-              theme, 'Langsung akses dashboard tim', theme.colorScheme.primary),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
+            const SizedBox(height: 16),
+            Text(
+                'Anda adalah Anggota yang sudah mendapat kode undangan dari Ketua atau Admin.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            const SizedBox(height: 32),
+            _buildFeatureItem(
+                theme, 'Masukkan kode organisasi', tealColor),
+            const SizedBox(height: 16),
+            _buildFeatureItem(
+                theme, 'Bergabung sebagai Anggota', tealColor),
+            const SizedBox(height: 16),
+            _buildFeatureItem(
+                theme, 'Langsung akses dashboard tim', tealColor),
+            const SizedBox(height: 40),
+            _GradientButton(
               onPressed: () => setState(() => mode = 'join'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Gabung dengan Kode',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              text: 'Gabung dengan Kode',
+              height: 56,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     )
         .animate()
@@ -565,6 +711,8 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
   }
 
   Widget _buildCreateScreen(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -572,9 +720,9 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              theme.colorScheme.secondary.withOpacity(0.05),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),
@@ -646,11 +794,54 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
           onChanged: (value) => setState(() {
             selectedOrgType = value;
             errorMessage = '';
+            if (value != 'Lainnya') {
+              customOrgTypeController.clear();
+            }
           }),
           icon: Icons.people,
           theme: theme,
           required: true,
         ),
+        if (selectedOrgType == 'Lainnya') ...[
+          const SizedBox(height: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.edit, size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  const Text('Jenis Organisasi Lainnya',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  const Text(' *', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: customOrgTypeController,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan jenis organisasi',
+                  filled: true,
+                  fillColor: theme.scaffoldBackgroundColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                  ),
+                ),
+                onChanged: (_) => setState(() => errorMessage = ''),
+              ),
+            ],
+          ),
+        ],
         if (errorMessage.isNotEmpty) ...[
           const SizedBox(height: 16),
           Container(
@@ -674,24 +865,36 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
+                ).copyWith(
+                  elevation: MaterialStateProperty.resolveWith<double>(
+                    (Set<MaterialState> states) {
+                      if (states.contains(MaterialState.hovered)) {
+                        return 4;
+                      }
+                      return 0;
+                    },
+                  ),
+                  backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                      if (states.contains(MaterialState.hovered)) {
+                        return theme.colorScheme.primary.withOpacity(0.05);
+                      }
+                      return Colors.transparent;
+                    },
+                  ),
                 ),
                 child: const Text('Kembali'),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ElevatedButton(
+              child: _GradientButton(
                 onPressed: (isSubmitting || isLoadingOrgTypes)
                     ? null
                     : handleCreateOrganization,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(isSubmitting ? 'Membuat...' : 'Buat Organisasi'),
+                text: isSubmitting ? 'Membuat...' : 'Buat Organisasi',
+                height: 48,
+                isLoading: isSubmitting,
               ),
             ),
           ],
@@ -762,15 +965,9 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
+                  _GradientIconButton(
                     onPressed: handleCopyCode,
-                    icon: Icon(copied ? Icons.check : Icons.copy,
-                        color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(12),
-                    ),
+                    icon: copied ? Icons.check : Icons.copy,
                   ),
                 ],
               ),
@@ -814,26 +1011,18 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
+        _GradientButton(
+          onPressed: handleContinueAfterCreate,
+          text: 'Lanjut ke Profiling',
           height: 48,
-          child: ElevatedButton.icon(
-            onPressed: handleContinueAfterCreate,
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text('Lanjut ke Profiling'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
         ),
       ],
     );
   }
 
   Widget _buildJoinScreen(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -841,9 +1030,9 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              theme.colorScheme.secondary.withOpacity(0.05),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),
@@ -1010,28 +1199,34 @@ class _OrganizationChoicePageState extends State<OrganizationChoicePage>
                                     const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
+                              ).copyWith(
+                                elevation: MaterialStateProperty.resolveWith<double>(
+                                  (Set<MaterialState> states) {
+                                    if (states.contains(MaterialState.hovered)) {
+                                      return 4;
+                                    }
+                                    return 0;
+                                  },
+                                ),
+                                backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                  (Set<MaterialState> states) {
+                                    if (states.contains(MaterialState.hovered)) {
+                                      return theme.colorScheme.primary.withOpacity(0.05);
+                                    }
+                                    return Colors.transparent;
+                                  },
+                                ),
                               ),
                               child: const Text('Kembali'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed:
-                                  isSubmitting ? null : handleJoinOrganization,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: Text(
-                                isSubmitting
-                                    ? 'Memproses...'
-                                    : 'Gabung Organisasi',
-                              ),
+                            child: _GradientButton(
+                              onPressed: isSubmitting ? null : handleJoinOrganization,
+                              text: isSubmitting ? 'Memproses...' : 'Gabung Organisasi',
+                              height: 48,
+                              isLoading: isSubmitting,
                             ),
                           ),
                         ],

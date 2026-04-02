@@ -13,6 +13,88 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
+class _GradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final String text;
+  final double height;
+  final bool isLoading;
+
+  const _GradientButton({
+    required this.onPressed,
+    required this.text,
+    this.height = 56,
+    this.isLoading = false,
+  });
+
+  @override
+  State<_GradientButton> createState() => _GradientButtonState();
+}
+
+class _GradientButtonState extends State<_GradientButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    const hoverPurple = Color(0xFFA78BFA);
+    const hoverTeal = Color(0xFF2DD4BF);
+
+    return MouseRegion(
+      cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: widget.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isHovered && widget.onPressed != null
+                ? [hoverPurple, hoverTeal]
+                : [purpleColor, tealColor],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isHovered && widget.onPressed != null
+              ? [
+                  BoxShadow(
+                    color: purpleColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      widget.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RegisterPageState extends State<RegisterPage>
     with TickerProviderStateMixin {
   final fullNameController = TextEditingController();
@@ -170,8 +252,8 @@ class _RegisterPageState extends State<RegisterPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
-    final secondaryColor = theme.colorScheme.secondary;
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
 
     return Scaffold(
       body: Container(
@@ -180,15 +262,15 @@ class _RegisterPageState extends State<RegisterPage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              secondaryColor.withOpacity(0.2),
+              purpleColor.withOpacity(0.15),
               theme.scaffoldBackgroundColor,
-              primaryColor.withOpacity(0.2),
+              tealColor.withOpacity(0.15),
             ],
           ),
         ),
         child: Stack(
           children: [
-            _buildAnimatedOrbs(primaryColor, secondaryColor),
+            _buildAnimatedOrbs(),
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -198,7 +280,7 @@ class _RegisterPageState extends State<RegisterPage>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildHeader(primaryColor, secondaryColor),
+                        _buildHeader(),
                         const SizedBox(height: 32),
                         _buildRegisterCard(theme),
                         const SizedBox(height: 24),
@@ -215,7 +297,9 @@ class _RegisterPageState extends State<RegisterPage>
     );
   }
 
-  Widget _buildAnimatedOrbs(Color primaryColor, Color secondaryColor) {
+  Widget _buildAnimatedOrbs() {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Positioned.fill(
       child: Stack(
         children: [
@@ -236,8 +320,8 @@ class _RegisterPageState extends State<RegisterPage>
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          secondaryColor.withOpacity(opacity * 0.3),
-                          secondaryColor.withOpacity(opacity * 0.1),
+                          tealColor.withOpacity(opacity * 0.3),
+                          tealColor.withOpacity(opacity * 0.1),
                         ],
                       ),
                     ),
@@ -266,8 +350,8 @@ class _RegisterPageState extends State<RegisterPage>
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          primaryColor.withOpacity(opacity * 0.3),
-                          primaryColor.withOpacity(opacity * 0.1),
+                          purpleColor.withOpacity(opacity * 0.3),
+                          purpleColor.withOpacity(opacity * 0.1),
                         ],
                       ),
                     ),
@@ -303,9 +387,9 @@ class _RegisterPageState extends State<RegisterPage>
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [
-                              primaryColor.withOpacity(opacity * 0.1),
-                              secondaryColor.withOpacity(opacity * 0.1),
-                              Colors.green.withOpacity(opacity * 0.1),
+                              purpleColor.withOpacity(opacity * 0.1),
+                              tealColor.withOpacity(opacity * 0.1),
+                              purpleColor.withOpacity(opacity * 0.1),
                             ],
                           ),
                         ),
@@ -340,7 +424,7 @@ class _RegisterPageState extends State<RegisterPage>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.green.withOpacity(opacity * 0.2),
+                        tealColor.withOpacity(opacity * 0.2),
                         Colors.transparent,
                       ],
                     ),
@@ -371,7 +455,7 @@ class _RegisterPageState extends State<RegisterPage>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.orange.withOpacity(opacity * 0.2),
+                        purpleColor.withOpacity(opacity * 0.2),
                         Colors.transparent,
                       ],
                     ),
@@ -388,7 +472,9 @@ class _RegisterPageState extends State<RegisterPage>
     );
   }
 
-  Widget _buildHeader(Color primaryColor, Color secondaryColor) {
+  Widget _buildHeader() {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
     return Column(
       children: [
         GestureDetector(
@@ -397,23 +483,16 @@ class _RegisterPageState extends State<RegisterPage>
             height: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  secondaryColor.withOpacity(0.2),
-                  primaryColor.withOpacity(0.2),
-                ],
-              ),
-              border: Border.all(
-                color: secondaryColor.withOpacity(0.3),
-                width: 2,
+                colors: [purpleColor, tealColor],
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.auto_awesome,
               size: 32,
-              color: secondaryColor,
+              color: Colors.white,
             ),
           ),
         )
@@ -423,8 +502,8 @@ class _RegisterPageState extends State<RegisterPage>
             .scale(begin: const Offset(0.8, 0.8), delay: 200.ms),
         const SizedBox(height: 16),
         ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [secondaryColor, primaryColor],
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [purpleColor, tealColor],
           ).createShader(bounds),
           child: const Text(
             'Join OrgaFlow',
@@ -836,41 +915,11 @@ class _RegisterPageState extends State<RegisterPage>
   }
 
   Widget _buildSubmitButton(ThemeData theme) {
-    return ElevatedButton(
+    return _GradientButton(
       onPressed: (isLoading || !agreeToTerms) ? null : handleSubmit,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 0,
-        disabledBackgroundColor: Colors.grey[300],
-      ),
-      child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.person_add, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+      text: 'Create Account',
+      height: 48,
+      isLoading: isLoading,
     )
         .animate()
         .fadeIn(duration: 500.ms, delay: 800.ms)
