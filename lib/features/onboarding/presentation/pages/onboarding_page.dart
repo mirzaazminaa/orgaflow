@@ -15,6 +15,99 @@ class OnboardingPage extends StatefulWidget {
   State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
+class _GradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final String text;
+  final double height;
+  final bool isLoading;
+  final IconData? icon;
+
+  const _GradientButton({
+    required this.onPressed,
+    required this.text,
+    this.height = 56,
+    this.isLoading = false,
+    this.icon,
+  });
+
+  @override
+  State<_GradientButton> createState() => _GradientButtonState();
+}
+
+class _GradientButtonState extends State<_GradientButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    const hoverPurple = Color(0xFFA78BFA);
+    const hoverTeal = Color(0xFF2DD4BF);
+
+    return MouseRegion(
+      cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: widget.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _isHovered && widget.onPressed != null
+                ? [hoverPurple, hoverTeal]
+                : [purpleColor, tealColor],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _isHovered && widget.onPressed != null
+              ? [
+                  BoxShadow(
+                    color: purpleColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.text,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (widget.icon != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(widget.icon, size: 18, color: Colors.white),
+                        ],
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OnboardingPageState extends State<OnboardingPage> {
   int currentStep = 0;
   final PageController _pageController = PageController();
@@ -231,7 +324,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       case 2:
         return true;
       case 3:
-        return bioController.text.isNotEmpty;
+        return true; // Step 4 is now optional
       default:
         return false;
     }
@@ -244,68 +337,44 @@ class _OnboardingPageState extends State<OnboardingPage> {
     const tealColor = Color(0xFF14B8A6);
 
     if (isLoadingInitialData) {
-      return Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                purpleColor.withOpacity(0.15),
-                theme.scaffoldBackgroundColor,
-                tealColor.withOpacity(0.15),
-              ],
-            ),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
         ),
       );
     }
 
     if (_initialData == null) {
       return Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                purpleColor.withOpacity(0.15),
-                theme.scaffoldBackgroundColor,
-                tealColor.withOpacity(0.15),
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  loadError ?? 'Gagal memuat data onboarding',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      isLoadingInitialData = true;
+                      loadError = null;
+                    });
+                    _loadInitialData();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: purpleColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Coba Lagi'),
+                ),
               ],
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    loadError ?? 'Gagal memuat data onboarding',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        isLoadingInitialData = true;
-                        loadError = null;
-                      });
-                      _loadInitialData();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: purpleColor,
-                    ),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -313,51 +382,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              purpleColor.withOpacity(0.15),
-              theme.scaffoldBackgroundColor,
-              tealColor.withOpacity(0.15),
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            _buildStickyHeader(theme),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildStep1(theme),
-                  _buildStep2(theme),
-                  _buildStep3(theme),
-                  _buildStep4(theme),
-                ],
-              ),
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _buildStickyHeader(theme),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildStep1(theme),
+                _buildStep2(theme),
+                _buildStep3(theme),
+                _buildStep4(theme),
+              ],
             ),
-            _buildFooter(theme),
-          ],
-        ),
+          ),
+          _buildFooter(theme),
+        ],
       ),
     );
   }
 
   Widget _buildStickyHeader(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2))
-        ],
-      ),
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    final progress = (currentStep + 1) / 4;
+    final percentage = ((currentStep + 1) * 25).toInt();
+    
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: SafeArea(
         bottom: false,
@@ -370,52 +423,70 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    gradient: LinearGradient(colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary
-                    ]),
+                    gradient: const LinearGradient(
+                      colors: [purpleColor, tealColor],
+                    ),
                   ),
-                  child:
-                      const Icon(Icons.person, size: 20, color: Colors.white),
+                  child: const Icon(Icons.person, size: 20, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Profiling Anggota',
+                      Text('Complete Your Profile',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text('Lengkapi data diri Anda',
+                      Text('Langkah 1 dari 4',
                           style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
-                Text('${currentStep + 1}/4',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary)),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [purpleColor, tealColor],
+                  ).createShader(bounds),
+                  child: Text(
+                    '$percentage%',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: List.generate(4, (index) {
-                final isActive = index == currentStep;
-                final isCompleted = index < currentStep;
-                return Expanded(
-                  child: Container(
-                    height: 4,
-                    margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      color: isCompleted || isActive
-                          ? theme.colorScheme.primary
-                          : Colors.grey[300],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                height: 8,
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                );
-              }),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                      width: MediaQuery.of(context).size.width * progress,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [purpleColor, tealColor],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          bottomLeft: Radius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -424,55 +495,39 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildFooter(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2))
-        ],
-      ),
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: SafeArea(
         top: false,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             if (currentStep > 0)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: previousStep,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Kembali'),
+              TextButton(
+                onPressed: previousStep,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-              ),
-            if (currentStep > 0) const SizedBox(width: 12),
-            Expanded(
-              flex: currentStep == 0 ? 1 : 1,
-              child: ElevatedButton(
+                child: const Text('Kembali', style: TextStyle(fontSize: 14)),
+              )
+            else
+              const SizedBox.shrink(),
+            SizedBox(
+              width: currentStep == 3 ? 240 : 160,
+              child: _GradientButton(
                 onPressed: (isStepValid() && !isSubmitting)
                     ? (currentStep == 3 ? handleComplete : nextStep)
                     : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  disabledBackgroundColor: Colors.grey[300],
-                ),
-                child: Text(
-                  currentStep == 3 && isSubmitting
-                      ? 'Menyimpan...'
-                      : currentStep == 3
-                          ? 'Selesai'
-                          : 'Lanjut',
-                ),
+                text: currentStep == 3 && isSubmitting
+                    ? 'Menyimpan...'
+                    : currentStep == 3
+                        ? 'Selesai & Masuk Dashboard'
+                        : 'Lanjut',
+                height: 48,
+                isLoading: currentStep == 3 && isSubmitting,
+                icon: currentStep == 3 ? Icons.check_circle : Icons.arrow_forward,
               ),
             ),
           ],
@@ -482,6 +537,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildStep1(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       child: Center(
@@ -490,11 +548,29 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Step 1: Data Identitas',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [purpleColor, tealColor],
+                    ),
+                  ),
+                  child: const Icon(Icons.person, size: 40, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Center(
+                child: Text('Step 1: Data Identitas',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               const SizedBox(height: 8),
-              Text('Informasi dasar tentang diri Anda',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              Center(
+                child: Text('Informasi dasar tentang diri Anda',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              ),
               const SizedBox(height: 32),
               Center(
                 child: GestureDetector(
@@ -555,6 +631,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 label: 'Jabatan',
                 value: selectedJabatan,
                 items: _initialData!.masterData.positions
+                    .where((item) => isOwnerLocked || item.label != 'Ketua Umum')
                     .map((item) => item.label)
                     .toList(),
                 onChanged: isOwnerLocked
@@ -588,6 +665,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildStep2(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       child: Center(
@@ -596,12 +676,30 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Step 2: Skill Inventory',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [purpleColor, tealColor],
+                    ),
+                  ),
+                  child: const Icon(Icons.bolt, size: 40, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Center(
+                child: Text('Step 2: Skill Inventory',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               const SizedBox(height: 8),
-              Text(
-                  'Pilih skill yang Anda kuasai dan tentukan tingkat kemahiran',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              Center(
+                child: Text(
+                    'Pilih skill yang Anda kuasai dan tentukan tingkat kemahiran',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              ),
               const SizedBox(height: 32),
               ..._initialData!.masterData.skillCategories.map((category) {
                 return Column(
@@ -813,18 +911,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
       String skillName, String currentProficiency, String value, String label) {
     final isSelected = currentProficiency == value;
     Color buttonColor;
+    Color lightColor;
     switch (value) {
       case 'beginner':
         buttonColor = Colors.orange;
+        lightColor = Colors.orange.withOpacity(0.2);
         break;
       case 'intermediate':
         buttonColor = Colors.teal;
+        lightColor = Colors.teal.withOpacity(0.2);
         break;
       case 'expert':
         buttonColor = Colors.green;
+        lightColor = Colors.green.withOpacity(0.2);
         break;
       default:
         buttonColor = Colors.grey;
+        lightColor = Colors.grey.withOpacity(0.2);
     }
 
     return InkWell(
@@ -837,17 +940,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
       },
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? buttonColor : Colors.white,
+          color: isSelected ? buttonColor : lightColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: buttonColor, width: 2),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : buttonColor,
           ),
@@ -857,6 +959,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildStep3(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       child: Center(
@@ -865,74 +970,157 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Step 3: Capacity & Commitment',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [purpleColor, tealColor],
+                    ),
+                  ),
+                  child: const Icon(Icons.schedule, size: 40, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Center(
+                child: Text('Step 3: Capacity & Commitment',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               const SizedBox(height: 8),
-              Text('Berapa banyak waktu yang bisa Anda dedikasikan?',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              Center(
+                child: Text('Berapa banyak waktu yang bisa Anda dedikasikan?',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              ),
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: theme.cardColor,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.dividerColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Flexible(
-                            child: Text('Kapasitas Mingguan',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text('${weeklyCapacity.toInt()} jam/minggu',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.primary)),
-                        ),
+                        const Icon(Icons.access_time, size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        const Text('Weekly Capacity (Jam/Minggu)',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500)),
+                        const Text(' *', style: TextStyle(color: Colors.red)),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: theme.colorScheme.primary,
-                        inactiveTrackColor: Colors.grey[300],
-                        thumbColor: theme.colorScheme.primary,
-                        overlayColor:
-                            theme.colorScheme.primary.withOpacity(0.2),
-                        trackHeight: 4,
+                    Center(
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [purpleColor, tealColor],
+                        ).createShader(bounds),
+                        child: Text(
+                          '${weeklyCapacity.toInt()}',
+                          style: const TextStyle(
+                            fontSize: 64,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                      child: Slider(
-                        value: weeklyCapacity,
-                        min: 0,
-                        max: 40,
-                        divisions: 8,
-                        onChanged: (value) =>
-                            setState(() => weeklyCapacity = value),
+                    ),
+                    Center(
+                      child: Text(
+                        'jam / minggu',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
+                    ),
+                    const SizedBox(height: 32),
+                    Column(
+                      children: [
+                        // Slider
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: Colors.transparent,
+                            inactiveTrackColor: Colors.transparent,
+                            thumbColor: purpleColor,
+                            overlayColor: purpleColor.withOpacity(0.1),
+                            trackHeight: 4,
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                          ),
+                          child: Slider(
+                            value: weeklyCapacity,
+                            min: 0,
+                            max: 40,
+                            divisions: 8,
+                            onChanged: (value) =>
+                                setState(() => weeklyCapacity = value),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Tick marks (vertical lines) and numbers
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  for (int i = 0; i <= 8; i++)
+                                    Container(
+                                      width: 2,
+                                      height: 12,
+                                      color: Colors.grey[400],
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  for (int i = 0; i <= 8; i++)
+                                    SizedBox(
+                                      width: 20,
+                                      child: Text(
+                                        '${i * 5}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: weeklyCapacity.toInt() == i * 5
+                                              ? purpleColor
+                                              : Colors.grey[500],
+                                          fontWeight: weeklyCapacity.toInt() == i * 5
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('0 jam',
+                        Text('Ringan',
                             style: TextStyle(
                                 fontSize: 12, color: Colors.grey[600])),
-                        Text('40 jam',
+                        Text('Full-time',
                             style: TextStyle(
                                 fontSize: 12, color: Colors.grey[600])),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'Berapa jam kamu sanggup bekerja untuk organisasi di tengah kesibukan kuliah',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
                     ),
                   ],
                 ),
@@ -941,9 +1129,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: theme.cardColor,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.dividerColor),
                 ),
                 child: Row(
                   children: [
@@ -980,6 +1167,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildStep4(ThemeData theme) {
+    const purpleColor = Color(0xFF8B5CF6);
+    const tealColor = Color(0xFF14B8A6);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
       child: Center(
@@ -988,16 +1178,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Step 4: Portfolio & Bio',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [purpleColor, tealColor],
+                    ),
+                  ),
+                  child: const Icon(Icons.work, size: 40, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Center(
+                child: Text('Portfolio & Social Link',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
               const SizedBox(height: 8),
-              Text('Tunjukkan karya dan ceritakan tentang diri Anda',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              Center(
+                child: Text('Proof of Work - Link ke karya dan profile kamu',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              ),
               const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Link Portfolio',
+                  const Text('Link Tautan (opsional)',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   TextButton.icon(
@@ -1042,13 +1250,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               decoration: InputDecoration(
                                 hintText: 'Platform',
                                 filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
+                                fillColor: Colors.white,
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: theme.dividerColor),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
                                 ),
                               ),
                               items: _initialData!.masterData.portfolioPlatforms
@@ -1072,14 +1287,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                     decoration: InputDecoration(
                                       hintText: 'https://...',
                                       filled: true,
-                                      fillColor: theme.scaffoldBackgroundColor,
+                                      fillColor: Colors.white,
                                       contentPadding:
                                           const EdgeInsets.symmetric(
                                               horizontal: 16, vertical: 12),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                            color: theme.dividerColor),
+                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
                                       ),
                                     ),
                                   ),
@@ -1109,13 +1331,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               decoration: InputDecoration(
                                 hintText: 'Platform',
                                 filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
+                                fillColor: Colors.white,
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: theme.dividerColor),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
                                 ),
                               ),
                               items: _initialData!.masterData.portfolioPlatforms
@@ -1139,13 +1368,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               decoration: InputDecoration(
                                 hintText: 'https://...',
                                 filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
+                                fillColor: Colors.white,
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: theme.dividerColor),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
                                 ),
                               ),
                             ),
@@ -1167,16 +1403,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 );
               }),
               const SizedBox(height: 24),
-              const Text('Bio Singkat',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              const Row(
+              Row(
                 children: [
-                  Text('Ceritakan tentang diri Anda',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text(' *', style: TextStyle(color: Colors.red)),
+                  const Text('Bio Singkat (opsional)',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ],
               ),
+              const SizedBox(height: 4),
+              const Text('Ceritakan tentang diri Anda',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 8),
               TextField(
                 controller: bioController,
@@ -1185,11 +1420,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   hintText:
                       'Saya adalah mahasiswa yang passionate di bidang...',
                   filled: true,
-                  fillColor: theme.scaffoldBackgroundColor,
+                  fillColor: Colors.white,
                   contentPadding: const EdgeInsets.all(16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
                   ),
                 ),
                 onChanged: (value) => setState(() {}),
@@ -1277,7 +1520,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
+            Icon(icon, size: 16, color: Colors.grey[700]),
             const SizedBox(width: 8),
             Text(label,
                 style:
@@ -1291,22 +1534,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: theme.scaffoldBackgroundColor,
+            fillColor: Colors.white,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  BorderSide(color: theme.colorScheme.primary, width: 2),
+                  const BorderSide(color: Color(0xFF8B5CF6), width: 2),
             ),
           ),
           onChanged: (value) => setState(() {}),
@@ -1330,7 +1572,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
+            Icon(icon, size: 16, color: Colors.grey[700]),
             const SizedBox(width: 8),
             Text(label,
                 style:
@@ -1345,22 +1587,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
             value: value,
             decoration: InputDecoration(
               filled: true,
-              fillColor: theme.scaffoldBackgroundColor,
+              fillColor: Colors.white,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: theme.dividerColor),
+                borderSide: BorderSide(color: Colors.grey[300]!),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+                borderSide: BorderSide(color: Colors.grey[300]!),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide:
-                    BorderSide(color: theme.colorScheme.primary, width: 2),
+                    const BorderSide(color: Color(0xFF8B5CF6), width: 2),
               ),
             ),
             items: items.map((item) {

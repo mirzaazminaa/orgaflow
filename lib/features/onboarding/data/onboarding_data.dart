@@ -16,7 +16,7 @@ class OnboardingData {
     'Ketua Umum',
     'Wakil Ketua',
     'Sekretaris',
-    'Bendahara',
+    'Bendahara',  
     'Koordinator Divisi',
     'Staf Medkominfo',
     'Staf Humas',

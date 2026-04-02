@@ -23,6 +23,35 @@ class _SessionResolverPageState extends State<SessionResolverPage> {
   }
 
   Future<void> _resolve() async {
+    // Check URL for password recovery code
+    final uri = Uri.base;
+    
+    // Check for error in URL (expired link)
+    if (uri.queryParameters['error_code'] == 'otp_expired') {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/auth');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Link reset password sudah kadaluarsa. Silakan request ulang.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      });
+      return;
+    }
+    
+    // Check if URL has recovery code (type=recovery or just code parameter)
+    if (uri.queryParameters.containsKey('code') || 
+        uri.queryParameters['type'] == 'recovery') {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/reset-password');
+      return;
+    }
+
+    // Normal flow
     final result = await (_presenter ??= SessionResolverPresenter())
         .resolve(refresh: true);
 

@@ -651,7 +651,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
           ),
         ),
         TextButton(
-          onPressed: handleForgotPassword,
+          onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
           child: Text(
             'Lupa password?',
             style: TextStyle(

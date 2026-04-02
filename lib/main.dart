@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/auth/presentation/pages/auth_page.dart';
+import 'features/auth/presentation/pages/forgot_password_page.dart';
+import 'features/auth/presentation/pages/reset_password_page.dart';
 import 'features/auth/presentation/pages/session_resolver_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/organization/presentation/pages/organization_choice_page.dart';
@@ -31,6 +33,8 @@ class MyApp extends StatelessWidget {
       home: const SessionResolverPage(),
       routes: {
         '/auth': (context) => const AuthPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
+        '/reset-password': (context) => const ResetPasswordPage(),
         '/organization': (context) => const OrganizationChoicePage(),
         '/onboarding': (context) => const onboarding.OnboardingPage(),
         '/dashboard': (context) => const ProfilePage(),
