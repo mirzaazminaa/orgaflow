@@ -69,6 +69,31 @@ class ErrorMapper {
   static String _mapPostgrestMessage(PostgrestException error) {
     final message = error.message.toLowerCase();
     final details = (error.details ?? '').toString().toLowerCase();
+    final hint = (error.hint ?? '').toString().toLowerCase();
+
+    if (message.contains('cycle') ||
+        details.contains('cycle') ||
+        hint.contains('cycle') ||
+        message.contains('acyclic') ||
+        details.contains('acyclic') ||
+        hint.contains('acyclic')) {
+      return 'Dependency akan membentuk cycle. Pilih task prasyarat lain.';
+    }
+
+    if (message.contains('task_dependencies_unique') ||
+        details.contains('task_dependencies_unique')) {
+      return 'Dependency ini sudah ada.';
+    }
+
+    if (message.contains('dependency must belong to the same project')) {
+      return 'Dependency harus berasal dari project yang sama.';
+    }
+
+    if (message.contains('task_dependencies_not_self_chk') ||
+        message.contains('task cannot depend on itself') ||
+        message.contains('task tidak bisa bergantung pada dirinya sendiri')) {
+      return 'Task tidak bisa bergantung pada dirinya sendiri.';
+    }
 
     if (message.contains('duplicate key value')) {
       if (message.contains('members') || details.contains('members')) {
@@ -83,14 +108,6 @@ class ErrorMapper {
 
     if (message.contains('invalid invite code format')) {
       return 'Format kode organisasi tidak valid. Contoh: HMTI-2026-ABC1';
-    }
-
-    if (message.contains('dependency must belong to the same project')) {
-      return 'Dependency harus berasal dari project yang sama.';
-    }
-
-    if (message.contains('task_dependencies_not_self_chk')) {
-      return 'Task tidak bisa bergantung pada dirinya sendiri.';
     }
 
     if (error.code == '42501' ||

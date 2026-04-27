@@ -1,5 +1,6 @@
 import '../../../../core/result/result.dart';
 import '../../data/repositories/task_dependency_repository.dart';
+import '../../domain/models/dependency_graph_data.dart';
 import '../../domain/models/manage_dependency_data.dart';
 
 class ManageDependencyPresenter {
@@ -31,5 +32,11 @@ class ManageDependencyPresenter {
 
   Future<Result<void>> deleteDependency(String dependencyId) {
     return _repository.deleteDependency(dependencyId);
+  }
+
+  Future<Result<DependencyGraphData>> fetchProjectDependencyGraph(
+    String projectId,
+  ) {
+    return _repository.fetchProjectDependencyGraph(projectId: projectId);
   }
 }

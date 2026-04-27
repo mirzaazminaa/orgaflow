@@ -131,6 +131,41 @@ class TaskRemoteDatasource {
     return rows.map(TaskModel.fromJson).toList();
   }
 
+  Future<Map<String, List<TaskAssigneeModel>>> fetchAssignmentsForTasks(
+    List<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) {
+      return const {};
+    }
+
+    final response = await _client
+        .from('task_assignments')
+        .select(
+          'task_id, member_id, '
+          'members(id, profile_id, profiles(full_name))',
+        )
+        .inFilter('task_id', taskIds);
+
+    final assigneesByTaskId = <String, List<TaskAssigneeModel>>{};
+    for (final json in response as List<dynamic>) {
+      final row = Map<String, dynamic>.from(json as Map);
+      final taskId = row['task_id'] as String?;
+      if (taskId == null) {
+        continue;
+      }
+
+      final assignee = TaskAssigneeModel.fromAssignmentJson(row);
+      if (assignee.memberId.trim().isEmpty) {
+        continue;
+      }
+
+      assigneesByTaskId.putIfAbsent(taskId, () => <TaskAssigneeModel>[]);
+      assigneesByTaskId[taskId]!.add(assignee);
+    }
+
+    return assigneesByTaskId;
+  }
+
   Future<Map<String, List<TaskSkillRequirementModel>>>
       fetchSkillRequirementsForTasks(List<String> taskIds) async {
     if (taskIds.isEmpty) {
@@ -226,7 +261,7 @@ class TaskRemoteDatasource {
         .toList();
   }
 
-  Future<TaskModel> updateTaskStatus({
+  Future<TaskModel> updateTaskStatusAdmin({
     required String taskId,
     required String status,
   }) async {
@@ -243,6 +278,45 @@ class TaskRemoteDatasource {
         response,
         fallbackMessage: 'Response update status task dari server tidak valid.',
       ),
+    );
+  }
+
+  Future<TaskModel> updateTaskStatus({
+    required String taskId,
+    required String status,
+  }) {
+    return updateTaskStatusAdmin(taskId: taskId, status: status);
+  }
+
+  Future<TaskModel> updateAssignedTaskProgress({
+    required String taskId,
+    required String status,
+  }) async {
+    final response = await _client.rpc(
+      'update_assigned_task_progress',
+      params: {
+        'p_task_id': taskId,
+        'p_status': status,
+      },
+    );
+
+    return TaskModel.fromJson(
+      _extractSingleRow(
+        response,
+        fallbackMessage:
+            'Response update progres task dari server tidak valid.',
+      ),
+    );
+  }
+
+  Future<void> recomputeProjectTaskBlocking({
+    required String projectId,
+  }) async {
+    await _client.rpc(
+      'recompute_project_task_blocking',
+      params: {
+        'p_project_id': projectId,
+      },
     );
   }
 

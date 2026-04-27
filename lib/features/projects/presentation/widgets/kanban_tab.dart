@@ -149,9 +149,14 @@ class _KanbanTabState extends State<KanbanTab> {
         // Body — ConstrainedBox replaces Expanded for unbounded parent compatibility
         DragTarget<Task>(
           onWillAcceptWithDetails: (details) =>
-              widget.canManageTasks && details.data.status != column.status,
+              _canUpdateTaskProgress(details.data) &&
+              details.data.status != column.status,
           onAcceptWithDetails: (details) async {
-            if (!widget.canManageTasks) {
+            if (details.data.isLocked) {
+              _showLockedTaskMessage();
+              return;
+            }
+            if (!_canUpdateTaskProgress(details.data)) {
               return;
             }
             await widget.onMoveTask(details.data.id, column.status);
@@ -200,8 +205,19 @@ class _KanbanTabState extends State<KanbanTab> {
 
   Widget _buildTaskCard(Task task, int columnColor) {
     final card = _buildTaskCardSurface(task, columnColor);
+    final canUpdateProgress = _canUpdateTaskProgress(task);
 
-    if (!widget.canManageTasks) {
+    if (task.isLocked) {
+      return Tooltip(
+        message: 'Task masih terkunci karena dependency belum selesai',
+        child: GestureDetector(
+          onLongPress: _showLockedTaskMessage,
+          child: card,
+        ),
+      );
+    }
+
+    if (!canUpdateProgress) {
       return card;
     }
 
@@ -241,9 +257,11 @@ class _KanbanTabState extends State<KanbanTab> {
     final estimatedHours = task.estimatedHours % 1 == 0
         ? task.estimatedHours.toInt().toString()
         : task.estimatedHours.toStringAsFixed(1);
+    final isLocked = task.isLocked;
+    final lockedAccentColor = Colors.orange.shade700;
 
     return Card(
-      color: Colors.white,
+      color: isLocked ? const Color(0xFFFFFBEB) : Colors.white,
       surfaceTintColor: Colors.white,
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1,
@@ -251,12 +269,19 @@ class _KanbanTabState extends State<KanbanTab> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(
+          color: isLocked ? Colors.orange.shade200 : Colors.grey.shade200,
+        ),
       ),
       child: Container(
         constraints: const BoxConstraints(minHeight: 110),
         decoration: BoxDecoration(
-          border: Border(left: BorderSide(color: Color(columnColor), width: 3)),
+          border: Border(
+            left: BorderSide(
+              color: isLocked ? lockedAccentColor : Color(columnColor),
+              width: 3,
+            ),
+          ),
         ),
         child: DefaultTextStyle.merge(
           style: const TextStyle(color: Color(0xFF1F2937)),
@@ -280,18 +305,25 @@ class _KanbanTabState extends State<KanbanTab> {
     required String description,
     required String estimatedHours,
   }) {
-    final contentIndent = widget.canManageTasks ? 22.0 : 0.0;
+    final showProgressHandle =
+        widget.canManageTasks || task.canCurrentUserUpdateProgress;
+    final contentIndent = showProgressHandle ? 22.0 : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (widget.canManageTasks) ...[
+          if (showProgressHandle) ...[
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Icon(Icons.drag_indicator,
-                  size: 16, color: Colors.grey.shade300),
+              child: Icon(
+                task.isLocked ? Icons.lock_outline : Icons.drag_indicator,
+                size: 16,
+                color: task.isLocked
+                    ? Colors.orange.shade700
+                    : Colors.grey.shade300,
+              ),
             ),
             const SizedBox(width: 6),
           ],
@@ -322,6 +354,10 @@ class _KanbanTabState extends State<KanbanTab> {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ],
+                if (task.isLocked) ...[
+                  const SizedBox(height: 8),
+                  _buildLockedBadge(),
                 ],
               ],
             ),
@@ -409,6 +445,19 @@ class _KanbanTabState extends State<KanbanTab> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (task.isBlocked) ...[
+          Icon(Icons.lock_outline, size: 12, color: Colors.orange.shade700),
+          const SizedBox(width: 4),
+          Text(
+            'Menunggu dependency',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.orange.shade700,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
         if (task.dependencies.isNotEmpty) ...[
           Icon(Icons.account_tree, size: 12, color: Colors.orange.shade700),
           const SizedBox(width: 4),
@@ -434,6 +483,49 @@ class _KanbanTabState extends State<KanbanTab> {
         ),
       ],
     );
+  }
+
+  Widget _buildLockedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline, size: 12, color: Colors.orange.shade800),
+          const SizedBox(width: 4),
+          Text(
+            'Blocked',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.orange.shade900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLockedTaskMessage() {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Task masih terkunci karena dependency belum selesai'),
+      ),
+    );
+  }
+
+  bool _canUpdateTaskProgress(Task task) {
+    return !task.isLocked &&
+        (widget.canManageTasks || task.canCurrentUserUpdateProgress);
   }
 
   Widget _buildTaskSkillChips(List<String> skills) {

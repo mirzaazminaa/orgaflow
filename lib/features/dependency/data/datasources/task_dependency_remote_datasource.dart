@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/supabase_config.dart';
 import '../../../task/domain/models/task_model.dart';
+import '../../domain/models/dependency_graph_data.dart';
 import '../../domain/models/manage_dependency_data.dart';
 import '../../domain/models/task_dependency_model.dart';
 
@@ -17,24 +18,23 @@ class TaskDependencyRemoteDatasource {
     required String taskId,
     required String projectId,
   }) async {
+    final normalizedTaskId = taskId.trim();
+    final normalizedProjectId = projectId.trim();
+
     final responses = await Future.wait<dynamic>([
       _client
           .from('tasks')
           .select()
-          .eq('project_id', projectId)
-          .neq('id', taskId)
+          .eq('project_id', normalizedProjectId)
+          .neq('id', normalizedTaskId)
           .order('created_at', ascending: false),
       _client
           .from('task_dependencies')
           .select(
             'id, depends_on_task_id, tasks!task_dependencies_depends_on_task_id_fkey(title)',
           )
-          .eq('task_id', taskId),
+          .eq('task_id', normalizedTaskId),
     ]);
-
-    final tasks = (responses[0] as List<dynamic>)
-        .map((json) => TaskModel.fromJson(json as Map<String, dynamic>))
-        .toList();
 
     final dependencies = (responses[1] as List<dynamic>).map((json) {
       final item = Map<String, dynamic>.from(json as Map);
@@ -56,6 +56,14 @@ class TaskDependencyRemoteDatasource {
       );
     }).toList();
 
+    final existingDependencyTaskIds =
+        dependencies.map((dependency) => dependency.dependsOnTaskId).toSet();
+    final tasks = (responses[0] as List<dynamic>)
+        .map((json) =>
+            TaskModel.fromJson(Map<String, dynamic>.from(json as Map)))
+        .where((task) => !existingDependencyTaskIds.contains(task.id))
+        .toList();
+
     return ManageDependencyData(
       tasks: tasks,
       dependencies: dependencies,
@@ -66,50 +74,89 @@ class TaskDependencyRemoteDatasource {
     required String taskId,
     required String dependsOnTaskId,
   }) async {
-    if (taskId == dependsOnTaskId) {
-      throw const AppError('Task tidak bisa bergantung pada dirinya sendiri.');
-    }
+    final normalizedTaskId = taskId.trim();
+    final normalizedDependsOnTaskId = dependsOnTaskId.trim();
 
-    final existing = await _client
-        .from('task_dependencies')
-        .select('id')
-        .eq('task_id', taskId)
-        .eq('depends_on_task_id', dependsOnTaskId)
-        .maybeSingle();
-
-    if (existing != null) {
-      throw const AppError('Dependency ini sudah ada.');
-    }
-
-    final tasks = await _client
-        .from('tasks')
-        .select('id, project_id')
-        .inFilter('id', [taskId, dependsOnTaskId]);
-
-    final taskRows = (tasks as List<dynamic>)
-        .map((json) => Map<String, dynamic>.from(json as Map))
-        .toList();
-
-    if (taskRows.length != 2) {
+    if (normalizedTaskId.isEmpty || normalizedDependsOnTaskId.isEmpty) {
       throw const AppError('Task dependency tidak valid.');
     }
 
-    final projectIds = taskRows
-        .map((item) => item['project_id'] as String?)
-        .whereType<String>()
-        .toSet();
-
-    if (projectIds.length != 1) {
-      throw const AppError('Dependency harus berasal dari project yang sama.');
+    if (normalizedTaskId == normalizedDependsOnTaskId) {
+      throw const AppError('Task tidak bisa bergantung pada dirinya sendiri.');
     }
 
-    await _client.from('task_dependencies').insert({
-      'task_id': taskId,
-      'depends_on_task_id': dependsOnTaskId,
+    await _client.rpc('add_task_dependency_dag', params: {
+      'p_task_id': normalizedTaskId,
+      'p_depends_on_task_id': normalizedDependsOnTaskId,
     });
   }
 
   Future<void> deleteDependency(String dependencyId) async {
-    await _client.from('task_dependencies').delete().eq('id', dependencyId);
+    final normalizedDependencyId = dependencyId.trim();
+    if (normalizedDependencyId.isEmpty) {
+      throw const AppError('Dependency tidak valid.');
+    }
+
+    await _client.rpc('delete_task_dependency_admin', params: {
+      'p_dependency_id': normalizedDependencyId,
+    });
+  }
+
+  Future<DependencyGraphData> fetchProjectDependencyGraph({
+    required String projectId,
+  }) async {
+    final normalizedProjectId = projectId.trim();
+    if (normalizedProjectId.isEmpty) {
+      throw const AppError('Project tidak valid.');
+    }
+
+    final taskResponse = await _client
+        .from('tasks')
+        .select(
+          'id, project_id, parent_task_id, title, description, '
+          'estimated_hours, priority, status, due_date, sort_order, '
+          'created_by, created_at, updated_at',
+        )
+        .eq('project_id', normalizedProjectId)
+        .order('created_at', ascending: false);
+
+    final taskRows = (taskResponse as List<dynamic>)
+        .map((json) => Map<String, dynamic>.from(json as Map))
+        .toList();
+    final tasks = taskRows.map(TaskModel.fromJson).toList();
+    final taskIds = tasks.map((task) => task.id).toSet();
+
+    if (taskIds.isEmpty) {
+      return const DependencyGraphData(nodes: [], edges: []);
+    }
+
+    final dependencyResponse = await _client
+        .from('task_dependencies')
+        .select('id, task_id, depends_on_task_id')
+        .inFilter('task_id', taskIds.toList());
+
+    final edges = (dependencyResponse as List<dynamic>)
+        .map((json) => Map<String, dynamic>.from(json as Map))
+        .where((row) {
+          final dependentTaskId = row['task_id'] as String?;
+          final prerequisiteTaskId = row['depends_on_task_id'] as String?;
+          return dependentTaskId != null &&
+              prerequisiteTaskId != null &&
+              taskIds.contains(dependentTaskId) &&
+              taskIds.contains(prerequisiteTaskId);
+        })
+        .map(
+          (row) => DependencyGraphEdge(
+            dependencyId: row['id'] as String,
+            fromTaskId: row['depends_on_task_id'] as String,
+            toTaskId: row['task_id'] as String,
+          ),
+        )
+        .toList();
+
+    return DependencyGraphData(
+      nodes: tasks.map(DependencyGraphNode.fromTaskModel).toList(),
+      edges: edges,
+    );
   }
 }

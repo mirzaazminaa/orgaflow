@@ -18,6 +18,7 @@ class TaskModel {
     this.createdAt,
     this.updatedAt,
     this.skillRequirements = const [],
+    this.assignees = const [],
   });
 
   final String id;
@@ -34,6 +35,10 @@ class TaskModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<TaskSkillRequirementModel> skillRequirements;
+  final List<TaskAssigneeModel> assignees;
+
+  bool get isAssignedToCurrentUser =>
+      assignees.any((assignee) => assignee.isCurrentUser);
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     final title = _readString(json, const ['title']).trim();
@@ -64,11 +69,15 @@ class TaskModel {
       skillRequirements: _parseSkillRequirements(
         json['skill_requirements'] ?? json['task_skill_requirements'],
       ),
+      assignees: _parseAssignees(
+        json['assignees'] ?? json['task_assignments'] ?? json['assignments'],
+      ),
     );
   }
 
   TaskModel copyWith({
     List<TaskSkillRequirementModel>? skillRequirements,
+    List<TaskAssigneeModel>? assignees,
   }) {
     return TaskModel(
       id: id,
@@ -85,6 +94,7 @@ class TaskModel {
       createdAt: createdAt,
       updatedAt: updatedAt,
       skillRequirements: skillRequirements ?? this.skillRequirements,
+      assignees: assignees ?? this.assignees,
     );
   }
 
@@ -167,5 +177,115 @@ class TaskModel {
           ),
         )
         .toList();
+  }
+
+  static List<TaskAssigneeModel> _parseAssignees(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+
+    return value
+        .whereType<Map>()
+        .map(
+          (json) => TaskAssigneeModel.fromAssignmentJson(
+            Map<String, dynamic>.from(json),
+          ),
+        )
+        .where((assignee) => assignee.memberId.trim().isNotEmpty)
+        .toList();
+  }
+}
+
+class TaskAssigneeModel {
+  const TaskAssigneeModel({
+    required this.memberId,
+    this.profileId,
+    required this.fullName,
+    this.isCurrentUser = false,
+  });
+
+  final String memberId;
+  final String? profileId;
+  final String fullName;
+  final bool isCurrentUser;
+
+  TaskAssigneeModel copyWith({
+    String? memberId,
+    String? profileId,
+    String? fullName,
+    bool? isCurrentUser,
+  }) {
+    return TaskAssigneeModel(
+      memberId: memberId ?? this.memberId,
+      profileId: profileId ?? this.profileId,
+      fullName: fullName ?? this.fullName,
+      isCurrentUser: isCurrentUser ?? this.isCurrentUser,
+    );
+  }
+
+  factory TaskAssigneeModel.fromAssignmentJson(Map<String, dynamic> json) {
+    final member = _asMap(json['members'] ?? json['member']);
+    final profile = _asMap(member?['profiles'] ?? member?['profile']);
+
+    final memberId = TaskModel._readNullableString(
+          json,
+          const ['member_id', 'memberId'],
+        ) ??
+        (member == null
+            ? null
+            : TaskModel._readNullableString(member, const ['id']));
+
+    final profileId = (member == null
+            ? null
+            : TaskModel._readNullableString(
+                member,
+                const ['profile_id', 'profileId'],
+              )) ??
+        TaskModel._readNullableString(
+          json,
+          const ['profile_id', 'profileId'],
+        );
+
+    final fullName = TaskModel._readNullableString(
+          json,
+          const ['full_name', 'fullName', 'assignee_name', 'assigneeName'],
+        ) ??
+        (profile == null
+            ? null
+            : TaskModel._readNullableString(
+                profile,
+                const ['full_name', 'fullName'],
+              )) ??
+        'Tanpa Nama';
+
+    return TaskAssigneeModel(
+      memberId: memberId ?? '',
+      profileId: profileId,
+      fullName: fullName,
+      isCurrentUser:
+          json['is_current_user'] == true || json['isCurrentUser'] == true,
+    );
+  }
+
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    if (value is List && value.isNotEmpty) {
+      final first = value.first;
+      if (first is Map<String, dynamic>) {
+        return first;
+      }
+      if (first is Map) {
+        return Map<String, dynamic>.from(first);
+      }
+    }
+
+    return null;
   }
 }

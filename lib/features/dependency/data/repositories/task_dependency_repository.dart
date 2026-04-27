@@ -1,5 +1,6 @@
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/result/result.dart';
+import '../../domain/models/dependency_graph_data.dart';
 import '../../domain/models/manage_dependency_data.dart';
 import '../datasources/task_dependency_remote_datasource.dart';
 
@@ -46,6 +47,19 @@ class TaskDependencyRepository {
       return Result<void>.success(null);
     } catch (error) {
       return Result<void>.failure(ErrorMapper.map(error));
+    }
+  }
+
+  Future<Result<DependencyGraphData>> fetchProjectDependencyGraph({
+    required String projectId,
+  }) async {
+    try {
+      final data = await _remoteDatasource.fetchProjectDependencyGraph(
+        projectId: projectId,
+      );
+      return Result<DependencyGraphData>.success(data);
+    } catch (error) {
+      return Result<DependencyGraphData>.failure(ErrorMapper.map(error));
     }
   }
 }

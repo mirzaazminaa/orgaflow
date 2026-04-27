@@ -24,7 +24,11 @@ class Task {
   final String title;
   final String description;
   final String assignee;
+  final List<task_domain.TaskAssigneeModel> assignees;
+  final bool isAssignedToCurrentUser;
+  final bool canCurrentUserUpdateProgress;
   final TaskStatus status;
+  final String databaseStatus;
   final double estimatedHours;
   final String priority;
   final DateTime? dueDate;
@@ -38,7 +42,11 @@ class Task {
     required this.title,
     required this.description,
     required this.assignee,
+    this.assignees = const [],
+    this.isAssignedToCurrentUser = false,
+    this.canCurrentUserUpdateProgress = false,
     required this.status,
+    required this.databaseStatus,
     required this.estimatedHours,
     this.priority = 'medium',
     this.dueDate,
@@ -47,7 +55,10 @@ class Task {
     required this.dependencies,
   });
 
-  factory Task.fromTaskModel(task_domain.TaskModel task) {
+  factory Task.fromTaskModel(
+    task_domain.TaskModel task, {
+    bool canManageTasks = false,
+  }) {
     final title = task.title.trim();
     final description = task.description?.trim() ?? '';
     final skills = task.skillRequirements
@@ -61,8 +72,13 @@ class Task {
       sourceTaskId: task.id,
       title: title.isNotEmpty ? title : 'Untitled Task',
       description: description,
-      assignee: '',
+      assignee: _assigneeLabel(task.assignees),
+      assignees: task.assignees,
+      isAssignedToCurrentUser: task.isAssignedToCurrentUser,
+      canCurrentUserUpdateProgress:
+          canManageTasks || task.isAssignedToCurrentUser,
       status: _statusFromTaskModel(task.status),
+      databaseStatus: _normalizeDatabaseStatus(task.status),
       estimatedHours: task.estimatedHours.toDouble(),
       priority: task.priority,
       dueDate: task.dueDate,
@@ -78,7 +94,11 @@ class Task {
     String? title,
     String? description,
     String? assignee,
+    List<task_domain.TaskAssigneeModel>? assignees,
+    bool? isAssignedToCurrentUser,
+    bool? canCurrentUserUpdateProgress,
     TaskStatus? status,
+    String? databaseStatus,
     double? estimatedHours,
     String? priority,
     DateTime? dueDate,
@@ -92,7 +112,14 @@ class Task {
       title: title ?? this.title,
       description: description ?? this.description,
       assignee: assignee ?? this.assignee,
+      assignees: assignees ?? this.assignees,
+      isAssignedToCurrentUser:
+          isAssignedToCurrentUser ?? this.isAssignedToCurrentUser,
+      canCurrentUserUpdateProgress:
+          canCurrentUserUpdateProgress ?? this.canCurrentUserUpdateProgress,
       status: status ?? this.status,
+      databaseStatus: databaseStatus ??
+          (status != null ? status.databaseValue : this.databaseStatus),
       estimatedHours: estimatedHours ?? this.estimatedHours,
       priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
@@ -103,10 +130,19 @@ class Task {
   }
 
   String get initials {
-    if (assignee.isEmpty) return '';
-    final names = assignee.split(' ');
-    return names.map((n) => n[0]).join('');
+    final source = assignees.isNotEmpty ? assignees.first.fullName : assignee;
+    final names = source
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((name) => name.isNotEmpty)
+        .take(2);
+
+    return names.map((name) => name.substring(0, 1).toUpperCase()).join();
   }
+
+  bool get isBlocked => databaseStatus == 'blocked';
+
+  bool get isLocked => isBlocked;
 
   static int _intIdFromTaskId(String taskId) {
     final normalized = taskId.replaceAll('-', '');
@@ -117,7 +153,7 @@ class Task {
   }
 
   static TaskStatus _statusFromTaskModel(String status) {
-    switch (status) {
+    switch (_normalizeDatabaseStatus(status)) {
       case 'todo':
         return TaskStatus.todo;
       case 'in_progress':
@@ -130,6 +166,25 @@ class Task {
       default:
         return TaskStatus.backlog;
     }
+  }
+
+  static String _normalizeDatabaseStatus(String status) {
+    final normalized = status.trim().toLowerCase().replaceAll('-', '_');
+    return normalized.isNotEmpty ? normalized : 'backlog';
+  }
+
+  static String _assigneeLabel(
+    List<task_domain.TaskAssigneeModel> assignees,
+  ) {
+    if (assignees.isEmpty) {
+      return '';
+    }
+
+    if (assignees.length > 1) {
+      return '${assignees.length} assignees';
+    }
+
+    return assignees.first.fullName.trim();
   }
 }
 

@@ -60,7 +60,8 @@ class WorkloadRemoteDatasource {
         ? const <dynamic>[]
         : await _client
             .from('task_assignments')
-            .select('member_id, allocation_hours, tasks(estimated_hours)')
+            .select(
+                'member_id, allocation_hours, tasks(estimated_hours, status)')
             .inFilter('member_id', memberIds);
 
     final assignedHoursByMemberId = <String, int>{};
@@ -72,16 +73,19 @@ class WorkloadRemoteDatasource {
       }
 
       final allocationHours = (assignment['allocation_hours'] as num?)?.toInt();
-      final taskRelation = assignment['tasks'];
+      final task = _asMap(assignment['tasks']);
+      final taskStatus = (task?['status'] as String? ?? '')
+          .trim()
+          .toLowerCase()
+          .replaceAll('-', '_');
+
+      if (taskStatus == 'done') {
+        continue;
+      }
 
       int taskHours = allocationHours ?? 0;
-      if (allocationHours == null) {
-        if (taskRelation is Map<String, dynamic>) {
-          taskHours = (taskRelation['estimated_hours'] as num?)?.toInt() ?? 0;
-        } else if (taskRelation is List && taskRelation.isNotEmpty) {
-          final task = Map<String, dynamic>.from(taskRelation.first as Map);
-          taskHours = (task['estimated_hours'] as num?)?.toInt() ?? 0;
-        }
+      if (allocationHours == null && task != null) {
+        taskHours = (task['estimated_hours'] as num?)?.toInt() ?? 0;
       }
 
       assignedHoursByMemberId.update(
@@ -182,6 +186,28 @@ class WorkloadRemoteDatasource {
   bool _isMissingView(PostgrestException error) {
     final message = error.message.toLowerCase();
     return error.code == 'PGRST205' || message.contains('v_member_workload');
+  }
+
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    if (value is List && value.isNotEmpty) {
+      final first = value.first;
+      if (first is Map<String, dynamic>) {
+        return first;
+      }
+      if (first is Map) {
+        return Map<String, dynamic>.from(first);
+      }
+    }
+
+    return null;
   }
 
   String _buildWorkloadStatus({

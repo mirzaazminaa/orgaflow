@@ -127,19 +127,33 @@ class TaskRepository {
   Future<Result<List<TaskModel>>> fetchTasks(String projectId) async {
     try {
       final tasks = await _remoteDatasource.fetchTasks(projectId);
+      final taskIds = tasks.map((task) => task.id).toList();
+      final context = await _sessionService.getCurrentContext();
+      final currentMemberId = context?.activeMember?.id;
+
+      final relatedData = await Future.wait<dynamic>([
+        _remoteDatasource.fetchSkillRequirementsForTasks(taskIds),
+        _remoteDatasource.fetchAssignmentsForTasks(taskIds),
+      ]);
+
       final requirementsByTaskId =
-          await _remoteDatasource.fetchSkillRequirementsForTasks(
-        tasks.map((task) => task.id).toList(),
-      );
-      final tasksWithRequirements = tasks
+          relatedData[0] as Map<String, List<TaskSkillRequirementModel>>;
+      final assigneesByTaskId =
+          relatedData[1] as Map<String, List<TaskAssigneeModel>>;
+
+      final tasksWithRelatedData = tasks
           .map(
             (task) => task.copyWith(
               skillRequirements: requirementsByTaskId[task.id] ?? const [],
+              assignees: _markCurrentUserAssignees(
+                assigneesByTaskId[task.id] ?? const [],
+                currentMemberId,
+              ),
             ),
           )
           .toList();
 
-      return Result<List<TaskModel>>.success(tasksWithRequirements);
+      return Result<List<TaskModel>>.success(tasksWithRelatedData);
     } catch (error) {
       return Result<List<TaskModel>>.failure(ErrorMapper.map(error));
     }
@@ -161,8 +175,6 @@ class TaskRepository {
     required String status,
   }) async {
     try {
-      await _requireManageContext();
-
       final normalizedTaskId = taskId.trim();
       if (normalizedTaskId.isEmpty) {
         return Result<void>.failure(
@@ -171,11 +183,19 @@ class TaskRepository {
       }
 
       final normalizedStatus = _normalizeTaskStatus(status);
+      final context = await _requireActiveContext();
 
-      await _remoteDatasource.updateTaskStatus(
-        taskId: normalizedTaskId,
-        status: normalizedStatus,
-      );
+      if (_canManageContext(context)) {
+        await _remoteDatasource.updateTaskStatusAdmin(
+          taskId: normalizedTaskId,
+          status: normalizedStatus,
+        );
+      } else {
+        await _remoteDatasource.updateAssignedTaskProgress(
+          taskId: normalizedTaskId,
+          status: normalizedStatus,
+        );
+      }
       return Result<void>.success(null);
     } catch (error) {
       return Result<void>.failure(ErrorMapper.map(error));
@@ -184,46 +204,16 @@ class TaskRepository {
 
   Future<Result<void>> evaluateTaskStatuses(String projectId) async {
     try {
-      final tasks = await _remoteDatasource.fetchTasks(projectId);
-      final taskIds = tasks.map((task) => task.id).toList();
-      final dependencyRows = await _remoteDatasource.fetchDependencies(taskIds);
-
-      final dependenciesByTaskId = <String, List<String>>{};
-      final dependencyTaskIds = <String>{};
-
-      for (final row in dependencyRows) {
-        final taskId = row['task_id'] as String;
-        final dependsOnTaskId = row['depends_on_task_id'] as String;
-        dependenciesByTaskId.putIfAbsent(taskId, () => <String>[]);
-        dependenciesByTaskId[taskId]!.add(dependsOnTaskId);
-        dependencyTaskIds.add(dependsOnTaskId);
-      }
-
-      final dependencyTasks =
-          await _remoteDatasource.fetchTasksByIds(dependencyTaskIds.toList());
-      final dependencyStatusMap = {
-        for (final task in dependencyTasks) task.id: task.status,
-      };
-
-      for (final task in tasks) {
-        final dependencies = dependenciesByTaskId[task.id] ?? const [];
-        final hasUnfinishedDependency = dependencies.any(
-          (dependencyTaskId) => dependencyStatusMap[dependencyTaskId] != 'done',
+      final normalizedProjectId = projectId.trim();
+      if (normalizedProjectId.isEmpty) {
+        return Result<void>.failure(
+          const AppError('Project tidak valid.'),
         );
-
-        if (hasUnfinishedDependency && task.status != 'blocked') {
-          await _remoteDatasource.updateTaskStatus(
-            taskId: task.id,
-            status: 'blocked',
-          );
-        } else if (!hasUnfinishedDependency && task.status == 'blocked') {
-          await _remoteDatasource.updateTaskStatus(
-            taskId: task.id,
-            status: 'todo',
-          );
-        }
       }
 
+      await _remoteDatasource.recomputeProjectTaskBlocking(
+        projectId: normalizedProjectId,
+      );
       return Result<void>.success(null);
     } catch (error) {
       return Result<void>.failure(ErrorMapper.map(error));
@@ -295,6 +285,26 @@ class TaskRepository {
         positionCode == 'ketua_divisi' ||
         positionCode == 'kepala_departemen' ||
         positionCode == 'koordinator_divisi';
+  }
+
+  List<TaskAssigneeModel> _markCurrentUserAssignees(
+    List<TaskAssigneeModel> assignees,
+    String? currentMemberId,
+  ) {
+    if (assignees.isEmpty) {
+      return const [];
+    }
+
+    final normalizedCurrentMemberId = currentMemberId?.trim();
+    return assignees
+        .map(
+          (assignee) => assignee.copyWith(
+            isCurrentUser: normalizedCurrentMemberId != null &&
+                normalizedCurrentMemberId.isNotEmpty &&
+                assignee.memberId == normalizedCurrentMemberId,
+          ),
+        )
+        .toList();
   }
 
   Future<SessionContext> _requireActiveContext() async {

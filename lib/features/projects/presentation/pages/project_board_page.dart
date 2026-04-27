@@ -86,8 +86,8 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
     super.dispose();
   }
 
-  Future<bool> _fetchProjectTasks() async {
-    if (!_isLoadingTasks) {
+  Future<bool> _fetchProjectTasks({bool showLoading = true}) async {
+    if (showLoading && !_isLoadingTasks) {
       setState(() {
         _isLoadingTasks = true;
       });
@@ -117,7 +117,9 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
       return false;
     }
 
-    final mappedTasks = result.data!.map(Task.fromTaskModel).toList();
+    final mappedTasks = result.data!
+        .map((task) => Task.fromTaskModel(task, canManageTasks: canManageTasks))
+        .toList();
     if (mappedTasks.isNotEmpty) {
       final firstTask = mappedTasks.first;
       debugPrint(
@@ -127,7 +129,10 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
         'description="${firstTask.description}", '
         'estimatedHours=${firstTask.estimatedHours}, '
         'skills=${firstTask.skills}, '
-        'status=${firstTask.status.databaseValue}',
+        'status=${firstTask.databaseStatus}, '
+        'isBlocked=${firstTask.isBlocked}, '
+        'assignee="${firstTask.assignee}", '
+        'isAssignedToCurrentUser=${firstTask.isAssignedToCurrentUser}',
       );
     }
 
@@ -264,11 +269,6 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
   }
 
   Future<void> _moveTask(int taskId, TaskStatus newStatus) async {
-    if (!_canManageTasks) {
-      _showMessage('Anda tidak memiliki izin untuk mengelola task.');
-      return;
-    }
-
     final taskIndex = _tasks.indexWhere((task) => task.id == taskId);
     if (taskIndex == -1) {
       _showMessage('Task tidak ditemukan.');
@@ -276,6 +276,18 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
     }
 
     final task = _tasks[taskIndex];
+    if (task.isLocked) {
+      _showMessage('Task masih terkunci karena dependency belum selesai');
+      return;
+    }
+
+    if (!_canUpdateProgress(task)) {
+      _showMessage(
+        'Anda hanya dapat mengubah progres task yang ditugaskan kepada Anda.',
+      );
+      return;
+    }
+
     final previousStatus = task.status;
     if (previousStatus == newStatus) {
       return;
@@ -320,7 +332,10 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
         'from=${newStatus.databaseValue}, '
         'to=${previousStatus.databaseValue}',
       );
+      return;
     }
+
+    await _fetchProjectTasks(showLoading: false);
   }
 
   void _showMessage(String message) {
@@ -331,6 +346,10 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  bool _canUpdateProgress(Task task) {
+    return _canManageTasks || task.canCurrentUserUpdateProgress;
   }
 
   int get _daysRemaining {
@@ -405,7 +424,10 @@ class _ProjectBoardPageState extends State<ProjectBoardPage>
           onDeleteTask: _confirmDeleteTask,
         );
       case 2:
-        return WorkflowTab(tasks: _tasks);
+        return WorkflowTab(
+          projectId: widget.projectId,
+          tasks: _tasks,
+        );
       case 3:
         return const TeamTab();
       default:
